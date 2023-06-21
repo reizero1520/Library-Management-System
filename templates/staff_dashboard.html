@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Styles and scripts -->
+</head>
+<body>
+  <!-- Existing code for the staff dashboard -->
+
+  <div class="pending-borrowings">
+    <h2>Pending Borrowings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Book</th>
+          <th>Quantity</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for borrowing in pending_borrowings %}
+        <tr id="{{ borrowing.pending_id }}">
+          <td>{{ get_member_username(borrowing.member_id) }}</td>
+          <td>{{ get_book_title(borrowing.book_id) }}</td>
+          <td>{{ borrowing.quantity }}</td>
+          <td>
+            <button onclick="acceptBorrowing('{{ borrowing.pending_id }}')">Accept</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Existing code for the staff dashboard -->
+
+  <script>
+    function acceptBorrowing(borrowingId) {
+      // Send an AJAX request to the server to accept the pending borrowing
+      fetch('/accept_pending_borrowing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pending_id: borrowingId
+        })
+      })
+        .then(response => {
+          if (response.ok) {
+            // Pending borrowing accepted successfully
+            alert('Pending borrowing accepted!');
+            // Remove the borrowing from the DOM
+            const row = document.getElementById(borrowingId);
+            if (row) {
+              row.remove();
+            }
+          } else {
+            // Error occurred
+            alert('Failed to accept pending borrowing. Please try again.');
+          }
+        })
+        .catch(error => {
+          alert('Failed to accept pending borrowing. Please try again.');
+        });
+    }
+  </script>
+</body>
+</html>

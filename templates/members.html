@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Members</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Styles for popup modals */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Members</h1>
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Birthday</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Actions</th>
+        </tr>
+        {% for member in members %}
+        <tr>
+            <td>{{ member[1] }}</td>
+            <td>{{ member[2] }}</td>
+            <td>{{ member[4] }}</td>
+            <td>{{ member[5] }}</td>
+            <td>{{ member[6] }}</td>
+            <td>{{ member[7] }}</td>
+            <td>
+                <button onclick="openEditModal('{{ member[0] }}', '{{ member[1] }}', '{{ member[2] }}', '{{ member[4] }}', '{{ member[5] }}', '{{ member[6] }}', '{{ member[7] }}')">Edit</button>
+                <form action="/admin/members" method="POST" style="display: inline;">
+                    <input type="hidden" name="delete" value="{{ member[0] }}">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Edit Member Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Member</h2>
+            <form id="editForm" action="/admin/members" method="POST">
+                <input type="hidden" id="editMemberId" name="edit">
+                <label for="editUsername">Username:</label>
+                <input type="text" id="editUsername" name="username" required><br>
+
+                <label for="editEmail">Email:</label>
+                <input type="email" id="editEmail" name="email" required><br>
+
+                <label for="editPhone">Phone:</label>
+                <input type="text" id="editPhone" name="phone" required><br>
+
+                <label for="editBirthday">Birthday:</label>
+                <input type="date" id="editBirthday" name="birthday" required><br>
+
+                <label for="editFirstName">First Name:</label>
+                <input type="text" id="editFirstName" name="first_name" required><br>
+
+                <label for="editLastName">Last Name:</label>
+                <input type="text" id="editLastName" name="last_name" required><br>
+
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Member Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateModal()">&times;</span>
+            <h2>Create Member</h2>
+            <form action="/admin/members" method="POST">
+                <label for="createUsername">Username:</label>
+                <input type="text" id="createUsername" name="username" required><br>
+
+                <label for="createEmail">Email:</label>
+                <input type="email" id="createEmail" name="email" required><br>
+
+                <label for="createPhone">Phone:</label>
+                <input type="text" id="createPhone" name="phone" required><br>
+
+                <label for="createBirthday">Birthday:</label>
+                <input type="date" id="createBirthday" name="birthday" required><br>
+
+                <label for="createFirstName">First Name:</label>
+                <input type="text" id="createFirstName" name="first_name" required><br>
+
+                <label for="createLastName">Last Name:</label>
+                <input type="text" id="createLastName" name="last_name" required><br>
+
+                <button type="submit">Create</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Open the edit member modal with pre-filled data
+        function openEditModal(memberId, username, email, phone, birthday, firstName, lastName) {
+            document.getElementById('editMemberId').value = memberId;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editPhone').value = phone;
+            document.getElementById('editBirthday').value = birthday;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Close the edit member modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Open the create member modal
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'block';
+        }
+
+        // Close the create member modal
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

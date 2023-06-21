@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            height: 100vh;
+            padding: 0 20px;
+        }
+
+        .login-form {
+            width: 40%;
+            max-width: 400px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-left: auto;
+            animation: slide-in 0.5s ease-in-out;
+        }
+
+        @keyframes slide-in {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        p {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        label {
+            display: block;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            text-align: center;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        .image-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        #background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        .register-link a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        /* New styles for the quote section */
+        .quote-section {
+            margin-top: 30px;
+            text-align: center;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        .quote-text {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .quote-author {
+            font-size: 14px;
+            color: #999;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function changeBackgroundImage() {
+            var imageCount = 16;  // Number of images available
+            var randomIndex = getRandomInt(1, imageCount);
+            var imagePath = '/static/images/image' + randomIndex + '.jpg';  // Modify path as per your image naming convention
+            document.getElementById('background-image').src = imagePath;
+        }
+
+        // Array of quotes
+        var quotes = [
+            {
+                text: "The more that you read, the more things you will know. The more that you learn, the more places you'll go.",
+                author: "Dr. Seuss"
+            },
+            {
+                text: "A reader lives a thousand lives before he dies, said Jojen. The man who never reads lives only one.",
+                author: "George R.R. Martin"
+            },
+            {
+                text: "Reading is a conversation. All books talk. But a good book listens as well.",
+                author: "Mark Haddon"
+            },
+            {
+                text: "A great book should leave you with many experiences, and slightly exhausted at the end. You live several lives while reading.",
+                author: "William Styron"
+            },
+            {
+                text: "There is no friend as loyal as a book.",
+                author: "Ernest Hemingway"
+            }
+        ];
+
+        // Function to change the quote
+        function changeQuote() {
+            var randomIndex = Math.floor(Math.random() * quotes.length);
+            var quote = quotes[randomIndex];
+            document.getElementById('quote-text').textContent = quote.text;
+            document.getElementById('quote-author').textContent = "- " + quote.author;
+        }
+
+        $(document).ready(function() {
+            changeBackgroundImage();
+            changeQuote();
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="image-container">
+            <img id="background-image" src="{{ url_for('static', filename='images/default.jpg') }}" alt="Background Image">
+        </div>
+        <div class="login-form">
+            <h1>Login</h1>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Log In" class="btn">
+                </div>
+                {% if error %}
+                <p class="error-message">{{ error }}</p>
+                {% endif %}
+            </form>
+            <div class="register-link">
+                <p>Don't have an account? <a href="/register">Register</a></p>
+            </div>
+            <div class="quote-section">
+                <p class="quote-text" id="quote-text"></p>
+                <p class="quote-author" id="quote-author"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    /* Styles for the popup */
+    .popup {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+    .popup-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.close-btn {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.show {
+  display: block !important;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+button {
+  padding: 8px 12px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+p {
+  margin-bottom: 10px;
+}
+
+.borrowed-books,
+.pending-borrowings {
+  margin-top: 30px;
+}
+
+.borrowed-books button,
+.pending-borrowings button {
+  margin-top: 10px;
+}
+
+.borrowed-books ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.borrowed-books li {
+  margin-bottom: 5px;
+}
+</style>
+</head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<body>
+  <h2>Available Books</h2>
+  {% if available_books %}
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Quantity</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for book in available_books %}
+      <tr>
+        <td>{{ book[2] }}</td>
+        <td>{{ book[3] }}</td>
+        <td>{{ book[7] }}</td>
+        <td>
+          <button onclick="showBookDetails('{{ book[0] }}')">Details</button>
+          <button onclick="addToBorrowings('{{ book[0] }}', '{{ book[2] }}', '{{ book[7] }}')">Add to Borrowings</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No books available.</p>
+  {% endif %}
+  <div id="book-details-popup" class="popup">
+    <div class="popup-content">
+      <span class="close-btn" onclick="closeBookDetails()">×</span>
+      <h3 id="book-details-title"></h3>
+      <p id="book-details-author"></p>
+      <p id="book-details-isbn"></p>
+      <p id="book-details-description"></p>
+      <p id="book-details-publisher"></p>
+      <p id="book-details-publication-date"></p>
+      <p id="book-details-quantity"></p>
+    </div>
+  </div>
+  <div class="borrowed-books">
+    <h2>Borrowed Books</h2>
+    {% if borrowed_books %}
+    <ul>
+      {% for book in borrowed_books %}
+      <li>{{ book.title }} by {{ book.author }}</li>
+      {% endfor %}
+    </ul>
+    <button onclick="viewBorrowedBooks()">View Borrowed Books</button>
+    {% else %}
+    <p>No books borrowed.</p>
+    {% endif %}
+  </div>
+  <div class="pending-borrowings">
+    <h2>Pending Borrowings</h2>
+    <button onclick="viewPendingBorrowings()">View Pending Borrowings</button>
+  </div>
+  <div id="pending-borrowings-popup" class="popup">
+    <div class="popup-content">
+      <span class="close-btn" onclick="closePendingBorrowings()">×</span>
+      <h3>Pending Borrowings</h3>
+      <ul id="pending-borrowings-list"></ul>
+    </div>
+  </div>
+  <script>
+    function viewPendingBorrowings() {
+      fetch('/pending_borrowings')
+        .then(response => response.json())
+        .then(data => {
+          if (data.length > 0) {
+            const list = document.getElementById('pending-borrowings-list');
+            list.innerHTML = '';
+            data.forEach(borrowing => {
+              const listItem = document.createElement('li');
+              listItem.id = borrowing.id; // Set the ID to uniquely identify the borrowing
+              listItem.textContent = `Title: ${borrowing.title}, Author: ${borrowing.author}, Quantity: ${borrowing.quantity}`;
+
+              // Add a button to remove the pending borrowing
+              const removeButton = document.createElement('button');
+              removeButton.textContent = 'Remove';
+              removeButton.addEventListener('click', () => removePendingBorrowing(borrowing.id));
+              listItem.appendChild(removeButton);
+
+              list.appendChild(listItem);
+            });
+            showPopup('pending-borrowings-popup');
+          } else {
+            alert('No pending borrowings.');
+          }
+        })
+        .catch(error => {
+          alert('Failed to retrieve pending borrowings.');
+        });
+    }
+
+    function removePendingBorrowing(borrowingId) {
+      // Send an AJAX request to the server to remove the pending borrowing
+      fetch('/remove_pending_borrowing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          borrowing_id: borrowingId
+        })
+      })
+        .then(response => {
+          if (response.ok) {
+            // Pending borrowing removed successfully
+            alert('Pending borrowing removed!');
+            // Remove the borrowing from the DOM
+            const listItem = document.getElementById(borrowingId);
+            if (listItem) {
+              listItem.remove();
+            }
+          } else {
+            // Error occurred
+            alert('Failed to remove pending borrowing. Please try again.');
+          }
+        })
+        .catch(error => {
+          alert('Failed to remove pending borrowing. Please try again.');
+        });
+    }
+
+    function showPopup(popupId) {
+      const popup = document.getElementById(popupId);
+      popup.style.display = 'block';
+    }
+
+    function closePendingBorrowings() {
+      const popup = document.getElementById('pending-borrowings-popup');
+      popup.style.display = 'none';
+    }
+
+    function addToBorrowings(bookId, bookTitle, quantity) {
+      // Send an AJAX request to the server to check if the book is already borrowed or pending
+      fetch('/check_borrowings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          book_id: bookId
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.borrowed) {
+            alert('You have already borrowed this book.');
+          } else if (data.pending) {
+            alert('This book is already pending for borrowing.');
+          } else {
+            // Book is not already borrowed or pending, proceed with adding it to borrowings
+            addBookToBorrowings(bookId, bookTitle, quantity);
+          }
+        })
+        .catch(error => {
+          alert('Failed to check borrowings. Please try again.');
+        });
+    }
+
+    function addBookToBorrowings(bookId, bookTitle, quantity) {
+      // Send an AJAX request to the server to add the book to the borrowing list
+      fetch('/add_to_borrowings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          book_id: bookId,
+          title: bookTitle,
+          quantity: quantity
+        })
+      })
+        .then(response => {
+          if (response.ok) {
+            // Book added to borrowings successfully
+            alert('Book added to borrowings!');
+          } else {
+            // Error occurred
+            alert('Failed to add book to borrowings. Please try again.');
+          }
+        })
+        .catch(error => {
+          alert('Failed to add book to borrowings. Please try again.');
+        });
+    }
+
+    function showBookDetails(bookId) {
+      // Send an AJAX request to the server to fetch book details
+      fetch('/book_details?book_id=' + bookId)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('book-details-title').textContent = data.title;
+          document.getElementById('book-details-author').textContent = 'Author: ' + data.author;
+          document.getElementById('book-details-isbn').textContent = 'ISBN: ' + data.isbn;
+          document.getElementById('book-details-description').textContent = 'Description: ' + data.description;
+          document.getElementById('book-details-publisher').textContent = 'Publisher: ' + data.publisher;
+          document.getElementById('book-details-publication-date').textContent = 'Publication Date: ' + data.publication_date;
+          document.getElementById('book-details-quantity').textContent = 'Quantity: ' + data.quantity;
+          showPopup('book-details-popup');
+        })
+        .catch(error => {
+          alert('Failed to retrieve book details. Please try again.');
+        });
+    }
+
+    function closeBookDetails() {
+      const popup = document.getElementById("book-details-popup");
+      popup.style.display = "none";
+      popup.classList.remove("show");
+    }
+
+    function viewBorrowedBooks() {
+      // Send an AJAX request to the server to fetch borrowed books
+      fetch('/borrowed_books')
+        .then(response => response.json())
+        .then(data => {
+          if (data.length > 0) {
+            let borrowedBooks = '';
+            data.forEach(book => {
+              borrowedBooks += `${book.title} by ${book.author}\n`;
+            });
+            alert('Borrowed Books:\n' + borrowedBooks);
+          } else {
+            alert('No books borrowed.');
+          }
+        })
+        .catch(error => {
+          alert('Failed to retrieve borrowed books.');
+        });
+    }
+  </script>
+</body>
+</html>

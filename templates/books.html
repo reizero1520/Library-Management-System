@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Books</title>
+    <style>
+        /* Styles for the popup form */
+        .popup-form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1;
+}
+
+.popup-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 2;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.popup-edit-form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1;
+}
+
+.popup-edit-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 2;
+}
+
+        /* Styles for the rest of the page */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .add-button {
+            margin-top: 20px;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        /* Custom styles for form layout */
+        .form-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .form-label {
+            width: 100px;
+            flex-shrink: 0;
+            padding-top: 6px;
+        }
+
+        .form-input {
+            flex-grow: 1;
+            padding: 6px;
+        }
+
+        .form-button {
+            margin-left: auto;
+        }
+        
+        .sort-select {
+            margin-bottom: 10px;
+        }
+
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script src="https://www.googleapis.com/books/v1/volumes?q=search+terms"></script>
+</head>
+<body>
+    <h1>Books</h1>
+    
+    <!-- Top Section -->
+    <div class="top-section">
+        <!-- Add Book Button -->
+        <div class="add-button">
+            <button onclick="openPopupForm()">Add Book</button>
+        </div>
+
+        <!-- Sort By Dropdown -->
+        <div class="sort-select">
+            <label for="sortSelect">Sort By:</label>
+            <select id="sortSelect" onchange="sortBooks()">
+                <option value="">-- Select an option --</option>
+                <option value="title">Title</option>
+                <option value="author">Author</option>
+                <option value="quantity">Quantity</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" onkeyup="searchBooks()" placeholder="Search by Title or Author">
+    </div>
+    <table id="booksTable">
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Quantity</th>
+            <th>Action</th> <!-- Added column for book details button -->
+        </tr>
+        {% for book in books %}
+        <tr>
+            <td>{{ book[2] }}</td>
+            <td>{{ book[3] }}</td>
+            <td>{{ book[7] }}</td>
+            <td style="display: none;">{{ book[0] }}</td>
+            <td style="display: none;">{{ book[1] }}</td>
+            <td style="display: none;">{{ book[4] }}</td>
+            <td style="display: none;">{{ book[6] }}</td>
+            <td style="display: none;">{{ book[5] }}</td>
+
+            <td><button onclick="showBookDetails(this)">Details</button></td> <!-- Button for book details -->
+            <td><button onclick="deleteBook(this)">Delete</button></td> <!-- Added delete button -->
+            <td><button onclick="editBook(this)">Edit</button></td> <!-- Added edit button -->
+        </tr>
+        <tr class="edit-form-row" style="display: none;">
+            <td colspan="7">
+                <div class="popup-edit-form-overlay" id="popupEditFormOverlay"></div>
+                <div class="popup-edit-form" id="popupEditForm">
+                    <span class="close-button" onclick="closeEditForm()">&times;</span>
+                    <h2>Edit Book Details</h2>
+                    <form method="POST" action="/admin/books">
+                    <input type="hidden" name="edit" value="{{ book[0] }}">
+                    <div class="form-row">
+                        <label class="form-label" for="editTitle">Title:</label>
+                        <input class="form-input" type="text" id="editTitle" name="title" value="{{ book[2] }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="editAuthor">Author:</label>
+                        <input class="form-input" type="text" id="editAuthor" name="author" value="{{ book[3] }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="editDescription">Description:</label>
+                        <textarea class="form-input" id="editDescription" name="description" required>{{ book[4] }}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="editPublisher">Publisher:</label>
+                        <input class="form-input" type="text" id="editPublisher" name="publisher" value="{{ book[5] }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="editPublicationDate">Publication Date:</label>
+                        <input class="form-input" type="date" id="editPublicationDate" name="publication_date" value="{{ book[6] }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="editQuantity">Quantity:</label>
+                        <input class="form-input" type="number" id="editQuantity" name="quantity" value="{{ book[7] }}" required>
+                    </div>
+                    <button type="submit">Update</button>
+                    <button type="button" onclick="cancelEdit(this)">Cancel</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+     
+    <!-- Add Book Popup Form -->
+    <div class="popup-form-overlay" id="popupFormOverlay"></div>
+    <div class="popup-form" id="popupForm">
+        <span class="close-button" onclick="closePopupForm()">&times;</span>
+        <h2>Add New Book</h2>
+        <form method="POST" action="/admin/books">
+            <div class="form-row">
+                <label class="form-label" for="searchBook">Search Book:</label>
+                <input class="form-input" type="text" id="searchBook" name="searchBook" required>
+                <button class="form-button" type="button" onclick="retrieveBookDetails()">Get Details</button>
+            </div>
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+              </div>
+              <div class="form-group">
+                <label for="author">Author</label>
+                <input type="text" class="form-control" id="author" name="author" required>
+              </div>
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="publisher">Publisher</label>
+                <input type="text" class="form-control" id="publisher" name="publisher" required>
+              </div>
+              <div class="form-group">
+                <label for="publication_date">Publication Date</label>
+                <input type="date" class="form-control" id="publication_date" name="publication_date" required>
+              </div>
+              <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" class="form-control" id="quantity" name="quantity" required>
+              </div>
+            <button type="submit" class="btn btn-primary">Create Book</button>
+        </form>
+    </div>
+    
+    <script>
+ // Function to open the Add Book Popup Form
+ function openPopupForm() {
+        var popupFormOverlay = document.getElementById("popupFormOverlay");
+        var popupForm = document.getElementById("popupForm");
+        popupFormOverlay.style.display = "block";
+        popupForm.style.display = "block";
+    }
+
+    // Function to close the Add Book Popup Form
+    function closePopupForm() {
+        var popupFormOverlay = document.getElementById("popupFormOverlay");
+        var popupForm = document.getElementById("popupForm");
+        popupFormOverlay.style.display = "none";
+        popupForm.style.display = "none";
+    }
+
+    // Add event listener to the Add Book button
+    var addBookButton = document.querySelector(".add-button button");
+    addBookButton.addEventListener("click", openPopupForm);
+
+    // Function to open the Edit Book Form
+    function editBook(button) {
+    var row = button.parentNode.parentNode;
+    var editFormRow = row.nextElementSibling;
+
+    // Hide the current row
+    row.style.display = "none";
+
+    // Show the edit form row and the edit popup
+    editFormRow.style.display = "table-row";
+    var popupEditFormOverlay = document.getElementById("popupEditFormOverlay");
+    var popupEditForm = document.getElementById("popupEditForm");
+    popupEditFormOverlay.style.display = "block";
+    popupEditForm.style.display = "block";
+}
+
+    // Function to cancel the Edit Book Form and go back to the original view
+    function cancelEdit(button) {
+        var editFormRow = button.parentNode.parentNode.parentNode;
+        var originalRow = editFormRow.previousElementSibling;
+
+        // Hide the edit form row and display the original row
+        editFormRow.style.display = "none";
+        originalRow.style.display = "table-row";
+    }
+
+    function closeEditForm() {
+    var editFormRow = document.querySelector(".edit-form-row");
+    var originalRow = editFormRow.previousElementSibling;
+
+    // Hide the edit form row and the edit popup
+    editFormRow.style.display = "none";
+    originalRow.style.display = "table-row";
+    var popupEditFormOverlay = document.getElementById("popupEditFormOverlay");
+    var popupEditForm = document.getElementById("popupEditForm");
+    popupEditFormOverlay.style.display = "none";
+    popupEditForm.style.display = "none";
+}
+
+
+        // Function for automatic search filtering
+        function searchBooks() {
+            var input = document.getElementById("searchInput");
+            var filter = input.value.toUpperCase();
+            var table = document.getElementById("booksTable");
+            var rows = table.getElementsByTagName("tr");
+
+            for (var i = 0; i < rows.length; i++) {
+                var title = rows[i].getElementsByTagName("td")[2];
+                var author = rows[i].getElementsByTagName("td")[3];
+                if (title || author) {
+                    var titleValue = title.textContent || title.innerText;
+                    var authorValue = author.textContent || author.innerText;
+                    if (titleValue.toUpperCase().indexOf(filter) > -1 || authorValue.toUpperCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        // Function to retrieve book details from Google Books API
+        function retrieveBookDetails() {
+        var searchBookInput = document.getElementById("searchBook");
+        var titleInput = document.getElementById("title");
+        var authorInput = document.getElementById("author");
+        var descriptionInput = document.getElementById("description");
+        var publisherInput = document.getElementById("publisher");
+        var publication_dateInput = document.getElementById("publication_date");
+
+        var searchQuery = searchBookInput.value;
+
+        // Make a request to the Google Books API
+        var url = "https://www.googleapis.com/books/v1/volumes?q=" + encodeURIComponent(searchQuery);
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Check if any results were found
+                if (data.totalItems > 0) {
+                    var book = data.items[0].volumeInfo;
+                    titleInput.value = book.title;
+                    authorInput.value = book.authors ? book.authors[0] : "";
+                    descriptionInput.value = book.description ? book.description : "";
+                    publisherInput.value = book.publisher ? book.publisher : "";
+                    
+                    // Check if publication date is available
+                    if (book.publishedDate) {
+                        publication_dateInput.value = book.publishedDate;
+                    } else {
+                        publication_dateInput.value = "Publication date not available";
+                    }
+                } else {
+                    // Handle case when no results were found
+                    titleInput.value = "";
+                    authorInput.value = "";
+                    descriptionInput.value = "";
+                    publisherInput.value = "";
+                    publication_dateInput.value = "";
+                    alert("No book details found for the given search query.");
+                }
+            })
+            .catch(error => {
+                console.error("Error retrieving book details:", error);
+                alert("An error occurred while retrieving book details.");
+            });
+    }
+
+        // Function to sort the books table
+        function sortBooks() {
+            var sortSelect = document.getElementById("sortSelect");
+            var selectedOption = sortSelect.value;
+
+            var booksTable = document.getElementById("booksTable");
+            var rows = Array.from(booksTable.getElementsByTagName("tr"));
+
+            // Remove header row from sorting
+            rows.shift();
+
+            rows.sort(function(a, b) {
+                var valueA, valueB;
+
+                switch (selectedOption) {
+                    case "title":
+                        valueA = a.cells[2].textContent || a.cells[2].innerText;
+                        valueB = b.cells[2].textContent || b.cells[2].innerText;
+                        break;
+                    case "author":
+                        valueA = a.cells[3].textContent || a.cells[3].innerText;
+                        valueB = b.cells[3].textContent || b.cells[3].innerText;
+                        break;
+                    case "quantity":
+                        valueA = parseInt(a.cells[5].textContent || a.cells[5].innerText);
+                        valueB = parseInt(b.cells[5].textContent || b.cells[5].innerText);
+                        break;
+                    default:
+                        // No valid option selected, do not perform sorting
+                        return 0;
+                }
+
+                if (valueA < valueB) {
+                    return -1;
+                } else if (valueA > valueB) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+
+            // Remove existing rows from table
+            while (booksTable.rows.length > 1) {
+                booksTable.deleteRow(1);
+            }
+
+            // Add sorted rows back to the table
+            rows.forEach(function(row) {
+                booksTable.appendChild(row);
+            });
+        }
+        
+        // Function to show book details in a popup
+        function showBookDetails(button) {
+    var row = button.parentNode.parentNode;
+    var bookId = row.cells[3].textContent.trim();
+    var isbn = row.cells[4].textContent.trim();
+    var title = row.cells[0].textContent.trim();
+    var author = row.cells[1].textContent.trim();
+    var description = row.cells[5].textContent.trim();
+    var publisher = row.cells[7].textContent.trim();
+    var publicationDate = row.cells[6].textContent.trim();
+    var quantity = row.cells[2].textContent.trim();
+
+    var popupFormOverlay = document.getElementById("popupFormOverlay");
+    var popupForm = document.getElementById("popupForm");
+
+    // Create and populate the popup content
+    var popupContent = document.createElement("div");
+    popupContent.innerHTML = `
+        <h2>Book Details</h2>
+        <p><strong>Book ID:</strong> ${bookId}</p>
+        <p><strong>ISBN:</strong> ${isbn}</p>
+        <p><strong>Title:</strong> ${title}</p>
+        <p><strong>Author:</strong> ${author}</p>
+        <p><strong>Description:</strong> ${description}</p>
+        <p><strong>Quantity:</strong> ${quantity}</p>
+        <p><strong>Publisher:</strong> ${publisher}</p>
+        <p><strong>Publication Date:</strong> ${publicationDate}</p>
+        <button class="exitButton" onclick="closePopup()">Exit</button>
+    `;
+
+    // Add the popup content to the popup form
+    popupForm.innerHTML = "";
+    popupForm.appendChild(popupContent);
+
+    // Show the popup form
+    popupFormOverlay.style.display = "block";
+    popupForm.style.display = "block";
+}
+
+
+    // Function to close the popup form
+    function closePopup() {
+        var popupFormOverlay = document.getElementById("popupFormOverlay");
+        var popupForm = document.getElementById("popupForm");
+        
+        // Hide the popup form
+        popupFormOverlay.style.display = "none";
+        popupForm.style.display = "none";
+    }
+
+    function showAddBookPopup() {
+    var popupFormOverlay = document.getElementById("popupFormOverlay");
+    var popupForm = document.getElementById("popupForm");
+
+    // Clear the content of the popupForm
+    popupForm.innerHTML = "";
+
+    // Create and populate the popup content for adding a book
+    var popupContent = document.createElement("div");
+    popupContent.innerHTML = `
+        <h2>Add Book</h2>
+        <form id="addBookForm">
+            <label for="title">Title:</label>
+            <input type="text" id="title" required><br>
+            
+            <label for="author">Author:</label>
+            <input type="text" id="author" required><br>
+            
+            <label for="isbn">ISBN:</label>
+            <input type="text" id="isbn" required><br>
+            
+            <button type="submit">Add</button>
+        </form>
+        <button class="exitButton" onclick="closePopup()">Exit</button>
+    `;
+
+    // Add the popup content to the popup form
+    popupForm.appendChild(popupContent);
+
+    // Show the popup form
+    popupFormOverlay.style.display = "block";
+    popupForm.style.display = "block";
+}
+
+// Function to delete a book
+function deleteBook(button) {
+    var row = button.parentNode.parentNode;
+    var bookId = row.getElementsByTagName("td")[3].innerText; // Get the book_id from the hidden column
+
+    // Send an AJAX request to delete the book
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/admin/books", true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            // Reload the page after successful deletion
+            location.reload();
+        }
+    };
+    xhr.send("delete=" + bookId);
+}
+
+    </script>
+</body>
+</html>
